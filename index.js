@@ -22,48 +22,43 @@ const parseBody = (body, html) => {
     }).get()
 }
 
-const toSliceArray = (data, html) => {
+const regexParse = (daa) => daa.replace(new RegExp("[0-9]", "g"), " ").replace(".", '').trim()
+
+const toSliceArray = (data, body, html) => {
+    let filt = ''
     return data.strongs.map((_, element) => {
-        return {
-            filter: html(element).text()
+        if (isNaN(parseInt(html(element).text()))) {
+            filt = html(element).text()
+            return {
+                topic: filt,
+                verse: _ + 1 ,
+                data: body[_] ? regexParse(body[_].body) : ''
+            }
+        } else if (filt) {
+            if (body[_]) return { verse: _ + 1, topic: filt, data: body[_] ? regexParse(body[_].body) : '' }
+        } else {
+            filt = ''
+            if (body[_]) return { verse: _ + 1, topic: '', data: body[_] ? regexParse(body[_].body) : '' }
         }
     }).get()
+
 }
 
-/*
-    Aqui tem um cdóigo que não me orgulho de ter escrevido.
-*/
-const parseFilterSlice = (slice, body) => {
-    const object = []
-    let indexExternal = -1
-    let filt
-    slice.map((value, index) => {
-        if (isNaN(parseInt(value.filter))) {
-            filt = value.filter
-            indexExternal += 1
-            object.push({ subtitle: filt, body: [] })
-        } else if (filt) {
-            if (body[index]) object[indexExternal].body.push(body[index - 1].body)
-        }
-    })
-    return object
-}
 
 const SearchNoticies = async (LeanResponse) => {
     try {
-        const response = await axios({ url: 'https://www.bibliatodo.com/pt/a-biblia/nova-versao-internacional/genesis-2', method: 'get' })
+        const response = await axios({ url: 'https://www.bibliatodo.com/pt/a-biblia/nova-versao-internacional/genesis-4', method: 'get' })
         const html = cheerio.load(response.data)
         let objectReturn = await LeanResponse(html)
         objectReturn = objectReturn[0]
         const body = await parseBody(objectReturn, html)
-        const slice = await toSliceArray(objectReturn, html)
-        const parseFilter = parseFilterSlice(slice, body)
+        const slice = await toSliceArray(objectReturn, body, html)
+        
         return {
-            title: objectReturn.title,
-            body: parseFilter
+            chapter: '',
+            verses: slice
         }
     } catch (err) {
-        console.log('err', err)
         throw new Error(err)
     }
 }
