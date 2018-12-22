@@ -7,18 +7,10 @@ const LeanResponse = (html) => {
     return Promise.all(html('#imprimible').map(async (_, element) => {
         return {
             title: html(element).find('.text-center').text(),
-            subtitle_element: html(element).find('h4'),
-            body_element: html(element).find('p')
+            body_element: html(element).find('p'),
+            strongs: html(element).find('strong')
         }
     }).get())
-}
-
-const parseSubtitle = (sub, html) => {
-    return sub.subtitle_element.map((_, element) => {
-        return {
-            subtitle: html(element).find('strong').text()
-        }
-    }).get()
 }
 
 
@@ -30,19 +22,45 @@ const parseBody = (body, html) => {
     }).get()
 }
 
+const toSliceArray = (data, html) => {
+    return data.strongs.map((_, element) => {
+        return {
+            filter: html(element).text()
+        }
+    }).get()
+}
+
+/*
+    Aqui tem um cdóigo que não me orgulho de ter escrevido.
+*/
+const parseFilterSlice = (slice, body) => {
+    const object = []
+    let indexExternal = -1
+    let filt
+    slice.map((value, index) => {
+        if (isNaN(parseInt(value.filter))) {
+            filt = value.filter
+            indexExternal += 1
+            object.push({ subtitle: filt, body: [] })
+        } else if (filt) {
+            if (body[index]) object[indexExternal].body.push(body[index - 1].body)
+        }
+    })
+    return object
+}
+
 const SearchNoticies = async (LeanResponse) => {
     try {
-        const response = await axios({ url: 'https://www.bibliatodo.com/pt/a-biblia/nova-versao-internacional/genesis-3', method: 'get' })
+        const response = await axios({ url: 'https://www.bibliatodo.com/pt/a-biblia/nova-versao-internacional/genesis-2', method: 'get' })
         const html = cheerio.load(response.data)
         let objectReturn = await LeanResponse(html)
-        objectReturn =  objectReturn[0]
-        const sub = await parseSubtitle(objectReturn, html)
+        objectReturn = objectReturn[0]
         const body = await parseBody(objectReturn, html)
-
+        const slice = await toSliceArray(objectReturn, html)
+        const parseFilter = parseFilterSlice(slice, body)
         return {
             title: objectReturn.title,
-            subtitle: sub,
-            body: body
+            body: parseFilter
         }
     } catch (err) {
         console.log('err', err)
@@ -51,5 +69,5 @@ const SearchNoticies = async (LeanResponse) => {
 }
 (async () => {
     const search = await SearchNoticies(LeanResponse)
-    console.log('search', search)
+    console.log('search', JSON.stringify(search, null, 2))
 })();
