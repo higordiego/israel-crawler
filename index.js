@@ -17,7 +17,8 @@ const LeanResponse = (html) => {
 const parseBody = (body, html) => {
     return body.body_element.map((_, element) => {
         return {
-            body: html(element).text()
+            number: _ + 1,
+            body: regexParse(html(element).text())
         }
     }).get()
 }
