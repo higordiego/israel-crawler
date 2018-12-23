@@ -40,12 +40,7 @@ const SearchNoticies = async (LeanResponse) => {
         let objectReturn = await LeanResponse(html)
         objectReturn = objectReturn[0]
         const body = await parseBody(objectReturn, html)
-        const slice = await toSliceArray(objectReturn, body, html)
-
-        return {
-            chapter: '',
-            verses: slice
-        }
+        return body
     } catch (err) {
         throw new Error(err)
     }
